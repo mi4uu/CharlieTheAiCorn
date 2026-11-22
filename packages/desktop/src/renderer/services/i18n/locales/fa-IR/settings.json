@@ -662,6 +662,8 @@
   "speechToTextBaseUrlPlaceholder": "https://your-host/v1",
   "speechToTextBaseUrlInvalid": "یک URL معتبر http(s) وارد کنید",
   "speechToTextModelPlaceholder": "یک مدل انتخاب یا تایپ کنید",
+  "speechToTextModelRefresh": "Refresh list",
+  "speechToTextModelListFailed": "Could not load the model list, type the model name",
   "speechToTextTest": "ذخیره و آزمایش",
   "speechToTextTestStop": "توقف",
   "speechToTextTestRecording": "در حال ضبط… یک جمله کوتاه بگویید",

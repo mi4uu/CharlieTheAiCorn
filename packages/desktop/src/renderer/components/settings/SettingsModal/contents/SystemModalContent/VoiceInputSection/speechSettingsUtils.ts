@@ -134,6 +134,33 @@ export const buildModelOptions = (presets: string[], currentModel?: string): str
   return [...presets, model];
 };
 
+const SPEECH_MODEL_HINT = /whisper|transcri|stt|speech|asr|omni|parakeet|voxtral|nara|canary/i;
+
+/** Speech-looking ids first (a gateway like llama-swap lists chat models too), each group sorted. */
+export const rankCustomSpeechModels = (ids: string[]): string[] => {
+  const unique = [...new Set(ids.map((id) => id.trim()).filter(Boolean))];
+  const speech = unique.filter((id) => SPEECH_MODEL_HINT.test(id)).toSorted();
+  const rest = unique.filter((id) => !SPEECH_MODEL_HINT.test(id)).toSorted();
+  return [...speech, ...rest];
+};
+
+/**
+ * aioncore rejects an empty OpenAI key as "not configured" even for a custom base_url, while local
+ * OpenAI-compatible servers need none. Store a placeholder key for keyless custom setups and hide it
+ * again when loading.
+ */
+export const KEYLESS_CUSTOM_API_KEY = 'not-needed';
+
+export const toStoredSpeechConfig = (config: SpeechToTextConfig): SpeechToTextConfig => {
+  if (config.provider !== 'openai' || !config.openai?.base_url?.trim() || config.openai.api_key?.trim()) {
+    return config;
+  }
+  return { ...config, openai: { ...config.openai, api_key: KEYLESS_CUSTOM_API_KEY } };
+};
+
+export const fromStoredSpeechConfig = (config: SpeechToTextConfig): SpeechToTextConfig =>
+  config.openai?.api_key === KEYLESS_CUSTOM_API_KEY ? { ...config, openai: { ...config.openai, api_key: '' } } : config;
+
 export const isValidHttpUrl = (value: string): boolean => {
   if (!value.trim()) {
     return false;

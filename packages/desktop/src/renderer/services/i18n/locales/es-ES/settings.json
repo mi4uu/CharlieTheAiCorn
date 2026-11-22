@@ -650,6 +650,8 @@
   "speechToTextBaseUrlPlaceholder": "https://tu-host/v1",
   "speechToTextBaseUrlInvalid": "Ingresa una URL http(s) válida",
   "speechToTextModelPlaceholder": "Seleccionar o escribir un nombre de modelo",
+  "speechToTextModelRefresh": "Refresh list",
+  "speechToTextModelListFailed": "Could not load the model list, type the model name",
   "speechToTextTest": "Guardar y probar",
   "speechToTextTestStop": "Detener",
   "speechToTextTestRecording": "Grabando... di una oración corta",

@@ -662,6 +662,8 @@
   "speechToTextBaseUrlPlaceholder": "https://your-host/v1",
   "speechToTextBaseUrlInvalid": "请输入有效的 http(s) 地址",
   "speechToTextModelPlaceholder": "选择或输入模型名称",
+  "speechToTextModelRefresh": "Refresh list",
+  "speechToTextModelListFailed": "Could not load the model list, type the model name",
   "speechToTextTest": "保存并测试",
   "speechToTextTestStop": "停止",
   "speechToTextTestRecording": "录音中… 请说一句话",

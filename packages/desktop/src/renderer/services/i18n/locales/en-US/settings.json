@@ -662,6 +662,8 @@
   "speechToTextBaseUrlPlaceholder": "https://your-host/v1",
   "speechToTextBaseUrlInvalid": "Enter a valid http(s) URL",
   "speechToTextModelPlaceholder": "Select or type a model name",
+  "speechToTextModelRefresh": "Refresh list",
+  "speechToTextModelListFailed": "Could not load the model list, type the model name",
   "speechToTextTest": "Save & Test",
   "speechToTextTestStop": "Stop",
   "speechToTextTestRecording": "Recording… speak a short sentence",

@@ -17,6 +17,10 @@ import {
   isValidHttpUrl,
   migrateSpeechLanguage,
   normalizeSpeechToTextConfig,
+  KEYLESS_CUSTOM_API_KEY,
+  fromStoredSpeechConfig,
+  rankCustomSpeechModels,
+  toStoredSpeechConfig,
 } from '@renderer/components/settings/SettingsModal/contents/SystemModalContent/VoiceInputSection/speechSettingsUtils';
 
 describe('deriveSpeechSource', () => {
@@ -224,5 +228,34 @@ describe('normalizeSpeechToTextConfig', () => {
   it('fills defaults for an explicitly empty openai sub-config', () => {
     const config = normalizeSpeechToTextConfig({ enabled: false, provider: 'openai', openai: {} as never });
     expect(config.openai?.model).toBe('gpt-4o-transcribe');
+  });
+});
+
+describe('rankCustomSpeechModels', () => {
+  it('puts speech models first, dedupes and drops blanks', () => {
+    expect(
+      rankCustomSpeechModels(['qwen3-reranker', 'lfm3-omni', ' ', 'whisper-large-v3', 'ornith', 'lfm3-omni'])
+    ).toEqual(['lfm3-omni', 'whisper-large-v3', 'ornith', 'qwen3-reranker']);
+  });
+});
+
+describe('keyless custom STT key', () => {
+  const custom = normalizeSpeechToTextConfig({
+    enabled: true,
+    provider: 'openai',
+    openai: { api_key: '', base_url: 'http://127.0.0.1:8095/v1', model: 'whisper-1', language: '' },
+  });
+
+  it('stores a placeholder key only for a keyless custom base_url and hides it on load', () => {
+    const stored = toStoredSpeechConfig(custom);
+    expect(stored.openai?.api_key).toBe(KEYLESS_CUSTOM_API_KEY);
+    expect(fromStoredSpeechConfig(stored).openai?.api_key).toBe('');
+  });
+
+  it('keeps real keys and official OpenAI untouched', () => {
+    const withKey = { ...custom, openai: { ...custom.openai!, api_key: 'sk-real' } };
+    expect(toStoredSpeechConfig(withKey).openai?.api_key).toBe('sk-real');
+    const official = { ...custom, openai: { ...custom.openai!, base_url: '' } };
+    expect(toStoredSpeechConfig(official).openai?.api_key).toBe('');
   });
 });

@@ -662,6 +662,8 @@
   "speechToTextBaseUrlPlaceholder": "https://your-host/v1",
   "speechToTextBaseUrlInvalid": "有効な http(s) URL を入力してください",
   "speechToTextModelPlaceholder": "モデル名を選択または入力",
+  "speechToTextModelRefresh": "Refresh list",
+  "speechToTextModelListFailed": "Could not load the model list, type the model name",
   "speechToTextTest": "保存してテスト",
   "speechToTextTestStop": "停止",
   "speechToTextTestRecording": "録音中… 短い文を話してください",

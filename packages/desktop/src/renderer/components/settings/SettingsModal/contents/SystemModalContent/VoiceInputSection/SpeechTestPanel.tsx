@@ -10,7 +10,7 @@ import { setClientBusinessSetting } from '@/renderer/services/clientBusinessSett
 import { Alert, Button } from '@arco-design/web-react';
 import React, { useCallback, useEffect, useRef, useState } from 'react';
 import { useTranslation } from 'react-i18next';
-import { isValidHttpUrl, type SpeechSource } from './speechSettingsUtils';
+import { isValidHttpUrl, toStoredSpeechConfig, type SpeechSource } from './speechSettingsUtils';
 
 const MAX_TEST_RECORDING_MS = 5000;
 
@@ -90,7 +90,7 @@ const SpeechTestPanel: React.FC<SpeechTestPanelProps> = ({ config, source }) => 
     }
 
     // The backend /api/stt reads the persisted config, so flush before testing.
-    await setClientBusinessSetting('tools.speechToText', config);
+    await setClientBusinessSetting('tools.speechToText', toStoredSpeechConfig(config));
 
     startedAtRef.current = Date.now();
     if (availability === 'file') {

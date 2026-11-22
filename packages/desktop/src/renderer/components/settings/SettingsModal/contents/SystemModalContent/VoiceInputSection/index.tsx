@@ -4,12 +4,13 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
+import { ipcBridge } from '@/common';
 import type { SpeechToTextConfig } from '@/common/types/provider/speech';
 import AionSelect from '@/renderer/components/base/AionSelect';
 import { SPEECH_TO_TEXT_CONFIG_CHANGED_EVENT } from '@/renderer/services/SpeechToTextService';
 import { getClientBusinessSetting, setClientBusinessSetting } from '@/renderer/services/clientBusinessSettings';
 import { getModelStreamCapability } from '@/renderer/services/speech/speechStreamPolicy';
-import { Divider, Form, Input, Switch } from '@arco-design/web-react';
+import { AutoComplete, Button, Divider, Form, Input, Switch } from '@arco-design/web-react';
 import React, { useCallback, useEffect, useRef, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import SpeechTestPanel from './SpeechTestPanel';
@@ -25,8 +26,13 @@ import {
   isValidHttpUrl,
   migrateSpeechLanguage,
   normalizeSpeechToTextConfig,
+  fromStoredSpeechConfig,
+  rankCustomSpeechModels,
+  toStoredSpeechConfig,
   type SpeechSource,
 } from './speechSettingsUtils';
+
+const MODEL_FETCH_DEBOUNCE_MS = 600;
 
 type OpenAIField = keyof NonNullable<SpeechToTextConfig['openai']>;
 type DeepgramField = keyof NonNullable<SpeechToTextConfig['deepgram']>;
@@ -64,7 +70,7 @@ const VoiceInputSection: React.FC = () => {
         if (cancelled) {
           return;
         }
-        const normalized = migrateSpeechLanguage(normalizeSpeechToTextConfig(stored));
+        const normalized = fromStoredSpeechConfig(migrateSpeechLanguage(normalizeSpeechToTextConfig(stored)));
         setConfig(normalized);
         setSource(deriveSpeechSource(normalized));
         if (deriveSpeechSource(normalized) === 'custom') {
@@ -85,7 +91,7 @@ const VoiceInputSection: React.FC = () => {
   const updateConfig = useCallback((updater: (current: SpeechToTextConfig) => SpeechToTextConfig) => {
     setConfig((current) => {
       const next = normalizeSpeechToTextConfig(updater(current));
-      void setClientBusinessSetting('tools.speechToText', next).catch((error) => {
+      void setClientBusinessSetting('tools.speechToText', toStoredSpeechConfig(next)).catch((error) => {
         console.error('Failed to save speech-to-text config:', error);
       });
       if (typeof window !== 'undefined') {
@@ -142,6 +148,45 @@ const VoiceInputSection: React.FC = () => {
   const modelPresets = isDeepgram ? DEEPGRAM_SPEECH_MODEL_PRESETS : OPENAI_SPEECH_MODEL_PRESETS;
   const customBaseUrl = config.openai?.base_url ?? '';
   const isBaseUrlInvalid = isCustom && customBaseUrl.trim() !== '' && !isValidHttpUrl(customBaseUrl);
+  const customApiKey = config.openai?.api_key ?? '';
+
+  const [remoteModels, setRemoteModels] = useState<string[]>([]);
+  const [modelsLoading, setModelsLoading] = useState(false);
+  const [modelsError, setModelsError] = useState('');
+  const [modelsRefresh, setModelsRefresh] = useState(0);
+
+  useEffect(() => {
+    if (!isCustom || !isValidHttpUrl(customBaseUrl)) {
+      setRemoteModels([]);
+      setModelsError('');
+      return;
+    }
+    let cancelled = false;
+    const timer = setTimeout(() => {
+      setModelsLoading(true);
+      // The backend validator requires a non-empty key; local servers ignore it.
+      ipcBridge.mode.fetchModelList
+        .invoke({ platform: 'custom', base_url: customBaseUrl.trim(), api_key: customApiKey.trim() || 'none' })
+        .then((res) => {
+          if (cancelled) return;
+          const ids = res.models.map((m) => (typeof m === 'string' ? m : m.id));
+          setRemoteModels(rankCustomSpeechModels(ids));
+          setModelsError('');
+        })
+        .catch((error: unknown) => {
+          if (cancelled) return;
+          setRemoteModels([]);
+          setModelsError(error instanceof Error ? error.message : String(error));
+        })
+        .finally(() => {
+          if (!cancelled) setModelsLoading(false);
+        });
+    }, MODEL_FETCH_DEBOUNCE_MS);
+    return () => {
+      cancelled = true;
+      clearTimeout(timer);
+    };
+  }, [isCustom, customBaseUrl, customApiKey, modelsRefresh]);
 
   const handleModelChange = useCallback(
     (value: string) => {
@@ -237,31 +282,51 @@ const VoiceInputSection: React.FC = () => {
               <Input.Password value={activeApiKey} visibilityToggle onChange={handleApiKeyChange} />
             </Form.Item>
 
-            <Form.Item label={t('settings.speechToTextModel')}>
-              <AionSelect
-                value={activeModel || undefined}
-                onChange={handleModelChange}
-                allowCreate={isCustom}
-                showSearch={isCustom}
-                placeholder={isCustom ? t('settings.speechToTextModelPlaceholder') : undefined}
+            {isCustom ? (
+              <Form.Item
+                label={t('settings.speechToTextModel')}
+                validateStatus={modelsError ? 'warning' : undefined}
+                help={modelsError ? `${t('settings.speechToTextModelListFailed')}: ${modelsError}` : undefined}
               >
-                {buildModelOptions(modelPresets, activeModel).map((model) => {
-                  const capability = getModelStreamCapability(source, model);
-                  const badgeText =
-                    capability === 'supported'
-                      ? t('settings.speechToTextStreamingBadge')
-                      : capability === 'unsupported'
-                        ? t('settings.speechToTextWholeBadge')
-                        : null;
-                  return (
-                    <AionSelect.Option key={model} value={model}>
-                      {model}
-                      {badgeText !== null && <span className='text-12px text-t-tertiary ms-8px'>{badgeText}</span>}
-                    </AionSelect.Option>
-                  );
-                })}
-              </AionSelect>
-            </Form.Item>
+                <div className='flex items-center gap-8px'>
+                  <AutoComplete
+                    className='flex-1'
+                    value={activeModel}
+                    data={remoteModels}
+                    onChange={(value) => handleModelChange(String(value ?? ''))}
+                    placeholder={t('settings.speechToTextModelPlaceholder')}
+                    triggerElement={<Input allowClear />}
+                  />
+                  <Button
+                    loading={modelsLoading}
+                    disabled={!isValidHttpUrl(customBaseUrl)}
+                    onClick={() => setModelsRefresh((n) => n + 1)}
+                  >
+                    {t('settings.speechToTextModelRefresh')}
+                  </Button>
+                </div>
+              </Form.Item>
+            ) : (
+              <Form.Item label={t('settings.speechToTextModel')}>
+                <AionSelect value={activeModel || undefined} onChange={handleModelChange}>
+                  {buildModelOptions(modelPresets, activeModel).map((model) => {
+                    const capability = getModelStreamCapability(source, model);
+                    const badgeText =
+                      capability === 'supported'
+                        ? t('settings.speechToTextStreamingBadge')
+                        : capability === 'unsupported'
+                          ? t('settings.speechToTextWholeBadge')
+                          : null;
+                    return (
+                      <AionSelect.Option key={model} value={model}>
+                        {model}
+                        {badgeText !== null && <span className='text-12px text-t-tertiary ms-8px'>{badgeText}</span>}
+                      </AionSelect.Option>
+                    );
+                  })}
+                </AionSelect>
+              </Form.Item>
+            )}
 
             <Form.Item label={t('settings.speechToTextLanguage')}>
               <AionSelect value={activeLanguage} onChange={handleLanguageChange}>

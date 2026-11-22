@@ -668,6 +668,8 @@
   "speechToTextBaseUrlPlaceholder": "https://your-host/v1",
   "speechToTextBaseUrlInvalid": "Введіть коректний http(s) URL",
   "speechToTextModelPlaceholder": "Виберіть або введіть назву моделі",
+  "speechToTextModelRefresh": "Refresh list",
+  "speechToTextModelListFailed": "Could not load the model list, type the model name",
   "speechToTextTest": "Зберегти й перевірити",
   "speechToTextTestStop": "Стоп",
   "speechToTextTestRecording": "Запис… скажіть коротку фразу",

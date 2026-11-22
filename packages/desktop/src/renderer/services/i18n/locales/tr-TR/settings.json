@@ -662,6 +662,8 @@
   "speechToTextBaseUrlPlaceholder": "https://your-host/v1",
   "speechToTextBaseUrlInvalid": "Geçerli bir http(s) URL girin",
   "speechToTextModelPlaceholder": "Model adı seçin veya yazın",
+  "speechToTextModelRefresh": "Refresh list",
+  "speechToTextModelListFailed": "Could not load the model list, type the model name",
   "speechToTextTest": "Kaydet ve Test Et",
   "speechToTextTestStop": "Durdur",
   "speechToTextTestRecording": "Kayıt yapılıyor… kısa bir cümle söyleyin",

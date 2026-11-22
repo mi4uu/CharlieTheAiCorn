@@ -662,6 +662,8 @@
   "speechToTextBaseUrlPlaceholder": "https://your-host/v1",
   "speechToTextBaseUrlInvalid": "유효한 http(s) URL을 입력하세요",
   "speechToTextModelPlaceholder": "모델 이름을 선택하거나 입력하세요",
+  "speechToTextModelRefresh": "Refresh list",
+  "speechToTextModelListFailed": "Could not load the model list, type the model name",
   "speechToTextTest": "저장 후 테스트",
   "speechToTextTestStop": "중지",
   "speechToTextTestRecording": "녹음 중… 짧은 문장을 말해 보세요",
